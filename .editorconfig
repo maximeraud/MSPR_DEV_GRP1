@@ -1,0 +1,17 @@
+# top-most EditorConfig file
+root = true
+
+# Valeurs globales par défaut
+[*]
+charset = utf-8                 # encodage UTF-8
+end_of_line = lf                # fin de ligne LF (Linux/Mac)
+insert_final_newline = true     # ajouter une ligne vide à la fin
+trim_trailing_whitespace = true # supprimer les espaces en fin de ligne
+indent_style = space            # indentation par espaces
+indent_size = 4                 # 4 espaces par niveau
+
+# Python
+[*.py]
+indent_style = space
+indent_size = 4
+max_line_length = 120           # pour respect PEP8
