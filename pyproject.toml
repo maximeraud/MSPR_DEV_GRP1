@@ -1,0 +1,14 @@
+[project]
+name = "ntl-systoolbox"
+version = "0.1.0"
+requires-python = ">=3.10"
+dependencies = [
+  "typer[all]>=0.12.0",
+  "rich>=13.7.0",
+]
+
+[project.scripts]
+ntl-systoolbox = "ntl_systoolbox.main:app"
+
+[tool.setuptools.packages.find]
+where = ["src"]
