@@ -1,3 +1,6 @@
 # MSPR_DEV_GRP1
 
-test commit branch
+pour lancer l'appli :
+
+py -m ntl_systoolbox.main
+
