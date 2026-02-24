@@ -1,0 +1,2 @@
+[console_scripts]
+ntl-systoolbox = ntl_systoolbox.main:app
