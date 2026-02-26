@@ -54,8 +54,6 @@ def _menu_module2() -> None:
     from ntl_systoolbox.cli.module2_backup import (
         interactive_dump_sql,
         interactive_export_csv,
-        interactive_verify_file,
-        interactive_list_sauvegardes,
     )
 
     while True:
@@ -64,8 +62,6 @@ def _menu_module2() -> None:
             [
                 ("1", "Sauvegarde BDD au format SQL (dump)"),
                 ("2", "Export d'une table au format CSV"),
-                ("3", "Vérifier l'intégrité d'un fichier (hash)"),
-                ("4", "Lister les sauvegardes locales"),
             ],
         )
         if c is None:
@@ -75,10 +71,6 @@ def _menu_module2() -> None:
             interactive_dump_sql()
         elif c == "2":
             interactive_export_csv()
-        elif c == "3":
-            interactive_verify_file()
-        elif c == "4":
-            interactive_list_sauvegardes()
 
 
 def _menu_module3() -> None:
