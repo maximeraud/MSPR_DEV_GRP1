@@ -28,30 +28,28 @@ def run_interactive_menu() -> None:
 
 def _menu_module1() -> None:
     from ntl_systoolbox.cli.module1_diag import (
-        run
+        run,
+        run_AD_DNS_OS
     )   
 
     while True:
         c = choose(
             "Module 1 - Diagnostic",
             [
-                ("1", "Tester services AD/DNS (placeholder)"),
+                ("1", "Services AD/DNS et ressources OS (placeholder)"),
                 ("2", "Tester accès MySQL (placeholder)"),
-                ("3", "Infos ressources OS (placeholder)"),
-                ("4", "Sortie JSON (placeholder)"),
+                ("3", "Sortie JSON (placeholder)"),
             ],
         )
         if c is None:
             return
         # Placeholders : tu relieras aux vraies fonctions plus tard
         if c == "1":
-            console.print("[yellow]TODO:[/yellow] implémenter test AD/DNS")
+            run_AD_DNS_OS()
         elif c == "2":
             console.print("[yellow]TODO:[/yellow] implémenter test MySQL")
             run()
         elif c == "3":
-            console.print("[yellow]TODO:[/yellow] implémenter diagnostic OS")
-        elif c == "4":
             console.print("[yellow]TODO:[/yellow] exporter JSON diagnostic")
 
 
