@@ -27,6 +27,10 @@ def run_interactive_menu() -> None:
 
 
 def _menu_module1() -> None:
+    from ntl_systoolbox.cli.module1_diag import (
+        run
+    )   
+
     while True:
         c = choose(
             "Module 1 - Diagnostic",
@@ -44,6 +48,7 @@ def _menu_module1() -> None:
             console.print("[yellow]TODO:[/yellow] implémenter test AD/DNS")
         elif c == "2":
             console.print("[yellow]TODO:[/yellow] implémenter test MySQL")
+            run()
         elif c == "3":
             console.print("[yellow]TODO:[/yellow] implémenter diagnostic OS")
         elif c == "4":
