@@ -1,0 +1,12 @@
+# Export CSV
+export/
+
+# Dump SQL
+sauvegarde/
+
+# Fichiers varibles d'environnement
+.env
+
+# Fichiers cache application
+src/ntl_systoolbox/__pycache__
+src/ntl_systoolbox.egg-info
