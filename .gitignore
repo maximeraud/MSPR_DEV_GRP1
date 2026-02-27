@@ -9,4 +9,6 @@ sauvegarde/
 
 # Fichiers cache application
 src/ntl_systoolbox/__pycache__
+src/ntl_systoolbox/cli/__pycache__
+src/ntl_systoolbox/core/__pycache__
 src/ntl_systoolbox.egg-info
