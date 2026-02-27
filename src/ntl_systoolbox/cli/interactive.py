@@ -48,7 +48,7 @@ def _menu_module1() -> None:
             console.print("[yellow]TODO:[/yellow] implémenter test AD/DNS")
         elif c == "2":
             console.print("[yellow]TODO:[/yellow] implémenter test MySQL")
-            run
+            run()
         elif c == "3":
             console.print("[yellow]TODO:[/yellow] implémenter diagnostic OS")
         elif c == "4":
