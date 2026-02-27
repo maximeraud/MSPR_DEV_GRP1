@@ -82,20 +82,30 @@ def _menu_module2() -> None:
 
 
 def _menu_module3() -> None:
+    from ntl_systoolbox.cli.module3_audit import (
+        interactive_audit_system,
+        interactive_audit_reseau,
+    )
     while True:
         c = choose(
             "Module 3 - Audit obsolescence",
             [
-                ("1", "Scanner un réseau (placeholder)"),
+                ("1", "Scanner un ou des hotes donné manuellement"),
                 ("2", "Générer rapport (placeholder)"),
                 ("3", "Exporter JSON (placeholder)"),
+                ("4", "Scanner un réseau entier "),
+                ("5", "Audit réseau SSH (placeholder)"),
             ],
         )
         if c is None:
             return
         if c == "1":
-            console.print("[yellow]TODO:[/yellow] implémenter scan réseau")
+            interactive_audit_system()
         elif c == "2":
             console.print("[yellow]TODO:[/yellow] implémenter rapport audit")
         elif c == "3":
             console.print("[yellow]TODO:[/yellow] exporter JSON audit")
+        elif c == "4":
+            interactive_audit_reseau()
+            
+            
