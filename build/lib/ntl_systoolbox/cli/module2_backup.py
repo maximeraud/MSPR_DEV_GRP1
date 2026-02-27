@@ -16,12 +16,11 @@ from typing import Optional, List
 
 from ntl_systoolbox.core.paths import get_paths
 
-from dotenv import load_dotenv
-load_dotenv()
+from dotenv import load_dotenv, find_dotenv
+load_dotenv(find_dotenv(".env", usecwd=True))
 
 app = typer.Typer()
 console = Console()
-
 
 def _write_dummy_file(path: Path, content: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -122,23 +121,24 @@ def dump_sql():
     out = paths.sauvegarde_dir / f"wms_dump_{ts}.sql"
 
     # Defaults and env-based credentials
-    host = os.environ.get("MYSQL_HOST", "172.16.135.62")
+    host = os.environ.get("MYSQL_HOST")
     user = os.environ.get("MYSQL_USER")
-    password = os.environ.get("MYSQL_PASSWORD")
     db = os.environ.get("MYSQL_DB")
-    port = int(os.environ.get("MYSQL_PORT", "3306"))
+    port_str = os.environ.get("MYSQL_PORT")
+    
+    if not all([host, user, db, port_str]):
+        console.print("[red]Variables .env manquantes[/red]")
+        console.print("MYSQL_HOST, MYSQL_PORT, MYSQL_USER, MYSQL_DB doivent être définies.")
+        return
 
-    if not (user and password and db):
-        console.print("[yellow]Identifiants MySQL manquants ou incomplets.[/yellow]")
-        console.print("Vous pouvez définir MYSQL_USER, MYSQL_PASSWORD, MYSQL_DB ou saisir les informations maintenant.")
-        user = user or console.input("MySQL user > ").strip()
-        if not user:
-            console.print("[red]Utilisateur manquant. Abandon.[/red]")
-            return
-        password = password or getpass.getpass("MySQL password: ")
-        db = db or console.input("Database name > ").strip()
-        if not db:
-            console.print("[red]Base de données manquante. Abandon.[/red]")
+    port = int(port_str)
+
+    # Mot de passe : demandé au runtime si absent
+    password = os.environ.get("MYSQL_PASSWORD")
+    if not password:
+        password = getpass.getpass("MySQL password: ")
+        if not password:
+            console.print("[red]Mot de passe manquant. Abandon.[/red]")
             return
 
     console.print(f"Tentative de dump de {db} sur {host}:{port} en tant que {user}...")
@@ -241,33 +241,34 @@ def export_csv(
     export_dir.mkdir(parents=True, exist_ok=True)
 
     # Defaults and env-based credentials
-    host = os.environ.get("MYSQL_HOST", "172.16.135.62")
+    host = os.environ.get("MYSQL_HOST")
     user = os.environ.get("MYSQL_USER")
+    db = os.environ.get("MYSQL_DB")
+    port_str = os.environ.get("MYSQL_PORT")
+    
+    if not all([host, user, db, port_str]):
+        console.print("[red]Variables .env manquantes[/red]")
+        console.print("MYSQL_HOST, MYSQL_PORT, MYSQL_USER, MYSQL_DB doivent être définies.")
+        return
+
+    port = int(port_str)
+
+    # Mot de passe : demandé au runtime si absent
     password = os.environ.get("MYSQL_PASSWORD")
-    db_name = db or os.environ.get("MYSQL_DB")
-    port = int(os.environ.get("MYSQL_PORT", "3306"))
-
-    if not (user and password and db_name):
-        console.print("[yellow]Identifiants MySQL manquants ou incomplets.[/yellow]")
-        console.print("Définis MYSQL_USER, MYSQL_PASSWORD, MYSQL_DB ou saisis les in2formations maintenant.")
-        user = user or console.input("MySQL user > ").strip()
-        if not user:
-            console.print("[red]Utilisateur manquant. Abandon.[/red]")
-            return
-        password = password or getpass.getpass("MySQL password: ")
-        db_name = db_name or console.input("Database name > ").strip()
-        if not db_name:
-            console.print("[red]Base de données manquante. Abandon.[/red]")
+    if not password:
+        password = getpass.getpass("MySQL password: ")
+        if not password:
+            console.print("[red]Mot de passe manquant. Abandon.[/red]")
             return
 
-    console.print(f"Connexion à {db_name} sur {host}:{port} ...")
-    ok = _test_db_connection(host=host, user=user, password=password, db=db_name, port=port)
+    console.print(f"Connexion à {db} sur {host}:{port} ...")
+    ok = _test_db_connection(host=host, user=user, password=password, db=db, port=port)
     if not ok:
         console.print("[red]Connexion à la base impossible — arrêt de l'export.[/red]")
         return
 
     # Liste des tables
-    tables = _list_tables_mysql_client(host=host, user=user, password=password, db=db_name, port=port)
+    tables = _list_tables_mysql_client(host=host, user=user, password=password, db=db, port=port)
     if not tables:
         console.print("[red]Aucune table trouvée (ou impossible de les lister).[/red]")
         return
@@ -293,13 +294,13 @@ def export_csv(
 
     # Export CSV dans export/
     ts = time.strftime("%Y%m%d_%H%M%S", time.gmtime())
-    out = export_dir / f"{db_name}_{table}_{ts}.csv"
+    out = export_dir / f"{db}_{table}_{ts}.csv"
 
     success = _export_table_csv_mysql_client(
         host=host,
         user=user,
         password=password,
-        db=db_name,
+        db=db,
         table=table,
         out_csv=out,
         port=port,
@@ -308,7 +309,7 @@ def export_csv(
         console.print("[red]Export CSV échoué.[/red]")
         return
 
-    manifest = _write_manifest(out, "export_csv", {"host": host, "db": db_name, "table": table, "note": "mysql client"})
+    manifest = _write_manifest(out, "export_csv", {"host": host, "db": db, "table": table, "note": "mysql client"})
     console.print(f"[green]OK[/green] CSV créé: {out}")
     console.print(f"Manifest: {manifest}")
 
