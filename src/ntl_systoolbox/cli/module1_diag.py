@@ -4,44 +4,41 @@ app = typer.Typer()
 
 @app.command("run")
 def run():
-    """Diagnostic (placeholder)."""
-    print("TODO: module 1 diagnostic")
+    
+    # Connection parameters
+    db_config = {
+        'user': 'admin',
+        'password': 'admin',
+        'host': '172.16.135.60',
+        'port': 3306,
+        'database': 'diagTest'
+    }
 
+    conn = None
+    cursor = None
 
-# Connection parameters
-db_config = {
-    'user': 'admin',
-    'password': 'admin',
-    'host': '172.16.135.60',
-    'port': 3306,
-    'database': 'diagTest'
-}
+    try:
+        # Establish connection
+        conn = mariadb.connect(**db_config)
+        print("Connected successfully!")
 
-conn = None
-cursor = None
+        # Create a cursor
+        cursor = conn.cursor()
 
-try:
-    # Establish connection
-    conn = mariadb.connect(**db_config)
-    print("Connected successfully!")
+        # Execute a query
+        cursor.execute("SELECT * FROM contacts")
+        results = cursor.fetchall()
 
-    # Create a cursor
-    cursor = conn.cursor()
+        # Display results
+        for row in results:
+            print(row)
 
-    # Execute a query
-    cursor.execute("SELECT * FROM contacts")
-    results = cursor.fetchall()
+    except mariadb.Error as err:
+        print(f"Error: {err}")
 
-    # Display results
-    for row in results:
-        print(row)
-
-except mariadb.Error as err:
-    print(f"Error: {err}")
-
-finally:
-    # Close connection and cursor safely
-    if cursor is not None:
-        cursor.close()
-    if conn is not None:
-        conn.close()
+    finally:
+        # Close connection and cursor safely
+        if cursor is not None:
+            cursor.close()
+        if conn is not None:
+            conn.close()
