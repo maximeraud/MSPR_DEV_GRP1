@@ -38,12 +38,12 @@ jobs:
 
     - name: Install MariaDB server
       run: |
-
         sudo service mysql start
-        mysql -e "CREATE DATABASE testdb;"
-        mysql -e "CREATE USER 'admin'@'localhost' IDENTIFIED BY 'admin';"
-        mysql -e "GRANT ALL PRIVILEGES ON testdb.* TO 'admin'@'localhost';"    
-
+        sudo mysql -u root -e "CREATE DATABASE IF NOT EXISTS testdb;"
+        sudo mysql -u root -e "CREATE USER IF NOT EXISTS 'admin'@'localhost' IDENTIFIED BY 'admin';"
+        sudo mysql -u root -e "GRANT ALL PRIVILEGES ON testdb.* TO 'admin'@'localhost';"
+        sudo mysql -u root -e "FLUSH PRIVILEGES;"
+        
     - name: Lint with flake8
       run: |
         # stop the build if there are Python syntax errors or undefined names
