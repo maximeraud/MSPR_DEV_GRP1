@@ -39,6 +39,7 @@ def _menu_module1() -> None:
                 ("2", "Tester accès MySQL (placeholder)"),
                 ("3", "Infos ressources OS (placeholder)"),
                 ("4", "Sortie JSON (placeholder)"),
+                ("9", "Quitter l'application"),
             ],
         )
         if c is None:
@@ -53,7 +54,8 @@ def _menu_module1() -> None:
             console.print("[yellow]TODO:[/yellow] implémenter diagnostic OS")
         elif c == "4":
             console.print("[yellow]TODO:[/yellow] exporter JSON diagnostic")
-
+        elif c == "9":
+            exit()
 
 def _menu_module2() -> None:
     from ntl_systoolbox.cli.module2_backup import (
@@ -67,6 +69,7 @@ def _menu_module2() -> None:
             [
                 ("1", "Sauvegarde BDD au format SQL (dump)"),
                 ("2", "Export d'une table au format CSV"),
+                ("9", "Quitter l'application"),
             ],
         )
         if c is None:
@@ -76,6 +79,8 @@ def _menu_module2() -> None:
             interactive_dump_sql()
         elif c == "2":
             interactive_export_csv()
+        elif c == "9":
+            exit()
 
 
 def _menu_module3() -> None:
@@ -92,6 +97,7 @@ def _menu_module3() -> None:
                 ("3", "Exporter JSON (placeholder)"),
                 ("4", "Scanner un réseau entier "),
                 ("5", "Audit réseau SSH (placeholder)"),
+                ("9", "Quitter l'application"),
             ],
         )
         if c is None:
@@ -104,5 +110,8 @@ def _menu_module3() -> None:
             console.print("[yellow]TODO:[/yellow] exporter JSON audit")
         elif c == "4":
             interactive_audit_reseau()
+        elif c == "9":
+            exit()
+
             
             
