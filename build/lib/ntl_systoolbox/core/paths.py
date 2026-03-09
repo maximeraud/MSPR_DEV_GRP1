@@ -8,12 +8,14 @@ class AppPaths:
     sauvegarde_dir: Path
 
 def detect_repo_root() -> Path:
-    # Heuristique simple: remonter jusqu'à trouver "sauvegarde/" ou "pyproject.toml"
-    cur = Path.cwd().resolve()
-    for parent in [cur] + list(cur.parents):
+    # Heuristique robuste: remonter depuis le fichier du module pour trouver
+    # "sauvegarde/" ou "pyproject.toml" (fonctionne même si l'app est lancée
+    # depuis un autre working directory).
+    cur_dir = Path(__file__).resolve().parent
+    for parent in [cur_dir] + list(cur_dir.parents):
         if (parent / "pyproject.toml").exists() or (parent / "sauvegarde").exists():
             return parent
-    return cur
+    return cur_dir
 
 def get_paths() -> AppPaths:
     root = detect_repo_root()
