@@ -124,7 +124,7 @@ def audit_network_ssh_mt(
     from concurrent.futures import ThreadPoolExecutor, as_completed
 
     if not username:
-        username = typer.prompt("[yellow]Nom d'utilisateur SSH non fourni. Merci de saisir le login :[/yellow]")
+        username = typer.prompt("Nom d'utilisateur SSH non fourni. Merci de saisir le login :")
 
 
     # Détection automatique de la clé SSH
@@ -144,21 +144,21 @@ def audit_network_ssh_mt(
             network_prefix = ".".join(local_ip.split(".")[:3])
             hosts = [f"{network_prefix}.{i}" for i in range(1, 255)]
 
-    typer.echo(f"[green]Début du scan de {len(hosts)} hôtes...[/green]")
+    typer.echo(f"Début du scan de {len(hosts)} hôtes...")
 
     # Fonction interne pour thread
     def audit_host(host: str) -> dict:
         try:
-            typer.echo(f"[blue]Tentative de connexion à {host}...[/blue]")
+            typer.echo(f"Tentative de connexion à {host}...")
             info = get_system_audit_ssh(host, username, ssh_key)
             info["host_ip"] = host
             if "error" in info:
-                typer.echo(f"[red][ERROR][/red] {host} -> {info['error']}")
+                typer.echo(f"[ERROR] {host} -> {info['error']}")
             else:
-                typer.echo(f"[green][OK][/green] {host} -> Connexion réussie")
+                typer.echo(f"[OK] {host} -> Connexion réussie")
             return info
         except Exception as e:
-            typer.echo(f"[red][TIMEOUT/ERROR][/red] {host} -> {str(e)}")
+            typer.echo(f"[TIMEOUT/ERROR] {host} -> {str(e)}")
             return {"host_ip": host, "error": str(e)}
 
     # Multithreading
@@ -168,8 +168,14 @@ def audit_network_ssh_mt(
         for future in as_completed(future_to_host):
             results.append(future.result())
 
-    typer.echo("[green]Audit terminé[/green]")
-    typer.echo(json.dumps(results, indent=2))
+    typer.echo("Audit terminé")
+    # Filtrer les machines où la connexion a fonctionné (pas d'erreur)
+    successful_results = [r for r in results if 'error' not in r]
+    if successful_results:
+        typer.echo("\nRésultats des machines connectées :")
+        typer.echo(json.dumps(successful_results, indent=2))
+    else:
+        typer.echo("Aucune machine connectée avec succès.")
 
 # --- Fonctions appelées par le menu interactif ---
 
