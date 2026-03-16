@@ -8,10 +8,11 @@ class AppPaths:
     sauvegarde_dir: Path
 
 def detect_repo_root() -> Path:
-    # Heuristique robuste: remonter depuis le fichier du module pour trouver
-    # "sauvegarde/" ou "pyproject.toml" (fonctionne même si l'app est lancée
-    # depuis un autre working directory).
-    cur_dir = Path(__file__).resolve().parent
+    # Partir du répertoire de travail courant (cwd) pour trouver la racine du
+    # projet via "pyproject.toml" ou "sauvegarde/". Cela fonctionne que le
+    # package soit installé ou utilisé en développement, à condition de lancer
+    # la commande depuis le projet (ou un sous-dossier).
+    cur_dir = Path.cwd()
     for parent in [cur_dir] + list(cur_dir.parents):
         if (parent / "pyproject.toml").exists() or (parent / "sauvegarde").exists():
             return parent

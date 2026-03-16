@@ -6,6 +6,9 @@ sauvegarde/
 
 # Fichiers varibles d'environnement
 .env
+.vscode/
+.venv/
+pytest_cache/
 
 # Fichiers cache application
 src/ntl_systoolbox/__pycache__
