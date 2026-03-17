@@ -86,16 +86,17 @@ def _menu_module3() -> None:
     from ntl_systoolbox.cli.module3_audit import (
         interactive_audit_system,
         interactive_audit_reseau,
+        show_audit_report,
+        export_audit_report_csv,
     )
     while True:
         c = choose(
             "Module 3 - Audit obsolescence",
             [
                 ("1", "Scanner un ou des hotes donné manuellement"),
-                ("2", "Générer rapport (placeholder)"),
-                ("3", "Exporter JSON (placeholder)"),
-                ("4", "Scanner un réseau entier "),
-                ("5", "Audit réseau SSH (placeholder)"),
+                ("2", "Scanner un réseau entier "),
+                ("3", "Afficher rapport audit "),
+                ("4", "Exporter rapport en CSV"),
                 ("9", "Quitter l'application"),
             ],
         )
@@ -104,11 +105,11 @@ def _menu_module3() -> None:
         if c == "1":
             interactive_audit_system()
         elif c == "2":
-            console.print("[yellow]TODO:[/yellow] implémenter rapport audit")
-        elif c == "3":
-            console.print("[yellow]TODO:[/yellow] exporter JSON audit")
-        elif c == "4":
             interactive_audit_reseau()
+        elif c == "3":
+            show_audit_report()
+        elif c == "4":
+            export_audit_report_csv()
         elif c == "9":
             exit()
 
