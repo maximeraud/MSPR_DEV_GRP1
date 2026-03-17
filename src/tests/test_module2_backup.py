@@ -52,7 +52,9 @@ def test_write_manifest_creates_json(tmp_path: Path):
     artifact = tmp_path / "dump.sql"
     artifact.write_text("abc", encoding="utf-8")
 
-    manifest = m2._write_manifest(artifact, "dump_sql", {"k": "v"})
+    log_dir = tmp_path / "log"
+    log_dir.mkdir()
+    manifest = m2._write_manifest(artifact, "dump_sql", {"k": "v"}, log_dir)
     assert manifest.exists()
 
     data = json.loads(manifest.read_text(encoding="utf-8"))
@@ -257,6 +259,7 @@ def test_dump_sql_missing_env_exits(monkeypatch, tmp_path: Path):
     class DummyPaths:
         sauvegarde_dir = tmp_path
         repo_root = tmp_path
+        log_dir = tmp_path
 
     monkeypatch.setattr(m2, "get_paths", lambda: DummyPaths())
 

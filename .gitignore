@@ -1,5 +1,6 @@
-# Export CSV
-export/
+# Export CSV et Logs 
+logs/*
+!logs/
 
 # Dump SQL
 sauvegarde/
@@ -9,6 +10,7 @@ sauvegarde/
 .vscode/
 .venv/
 pytest_cache/
+log/
 
 # Fichiers cache application
 src/ntl_systoolbox/__pycache__
