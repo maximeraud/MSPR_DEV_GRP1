@@ -9,6 +9,7 @@ sauvegarde/
 .vscode/
 .venv/
 pytest_cache/
+log/
 
 # Fichiers cache application
 src/ntl_systoolbox/__pycache__
