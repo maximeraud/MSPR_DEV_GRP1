@@ -40,24 +40,24 @@ sudo apt install git
 Cloner le dépôt sur la machine :
 
 ```bash
-git clone <url-du-depot>
+git clone git@github.com:maximeraud/MSPR_DEV_GRP1.git
 cd MSPR_DEV_GRP1
 ```
 
 ---
 
-## Installation via le script `setup.sh`
+## Installation via le script `setup/setup_linux.sh`
 
 ### Rendre le script exécutable
 
 ```bash
-chmod +x setup.sh
+chmod +x setup/setup_linux.sh
 ```
 
 ### Lancer le script
 
 ```bash
-./setup.sh
+bash setup/setup_linux.sh
 ```
 
 Le script s'occupe de tout automatiquement. Il affiche la progression à chaque étape et s'arrête immédiatement en cas d'erreur.
@@ -215,7 +215,7 @@ Pour repartir de zéro (supprimer et recréer l'environnement virtuel) :
 ```bash
 deactivate          # Si le venv est actif
 rm -rf .venv        # Suppression du venv
-./setup.sh          # Réinstallation complète
+bash setup/setup_linux.sh          # Réinstallation complète
 ```
 
 ---
@@ -223,7 +223,7 @@ rm -rf .venv        # Suppression du venv
 ## Résolution des problèmes courants
 
 | Erreur | Cause | Solution |
-|---|---|---|
+| --- | --- | --- |
 | `command not found: ntl-systoolbox` | venv non activé | `source .venv/bin/activate` |
 | `externally-managed-environment` | Installation hors venv | Utiliser le venv via `setup.sh` |
 | `No module named 'mariadb'` | Librairies système manquantes | `sudo apt install libmariadb3 libmariadb-dev` |
