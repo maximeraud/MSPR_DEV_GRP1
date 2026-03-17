@@ -11,7 +11,7 @@
 | Composant | Minimum recommandé |
 | --- | --- |
 | OS | Debian 13 (Trixie) |
-| RAM | 512 Mo |
+| RAM | 1024 Mo |
 | Stockage | 2 Go d'espace libre |
 | Réseau | Accès Internet (pour télécharger les dépendances) |
 | Droits | Accès `sudo` obligatoire |
