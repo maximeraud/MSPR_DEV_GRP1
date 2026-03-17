@@ -6,6 +6,7 @@ from pathlib import Path
 class AppPaths:
     repo_root: Path
     sauvegarde_dir: Path
+    log_dir: Path
 
 def detect_repo_root() -> Path:
     # Partir du répertoire de travail courant (cwd) pour trouver la racine du
@@ -22,4 +23,6 @@ def get_paths() -> AppPaths:
     root = detect_repo_root()
     sauvegarde = root / "sauvegarde"
     sauvegarde.mkdir(parents=True, exist_ok=True)
-    return AppPaths(repo_root=root, sauvegarde_dir=sauvegarde)
+    log = root / "log"
+    log.mkdir(parents=True, exist_ok=True)
+    return AppPaths(repo_root=root, sauvegarde_dir=sauvegarde, log_dir=log)
