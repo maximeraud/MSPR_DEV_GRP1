@@ -15,12 +15,19 @@ app = typer.Typer()
 
 def run():
     # Connection parameters
+
+    host = input("IP/Hostname : ").strip()
+    bdd = input("Base de données : ").strip()
+    user = input("Utilisateur : ").strip()
+    password = getpass.getpass("Mot de passe : ")
+    port_input = int(input("Port BDD [3306] : "))
+    
     db_config = {
-        'user': 'admin',
-        'password': 'admin',
-        'host': '172.16.135.60',
-        'port': 3306,
-        'database': 'diagTest'
+        'user': user,
+        'password': password,
+        'host': host,
+        'port': port_input,
+        'database': bdd
     }
 
     conn = None
@@ -35,7 +42,7 @@ def run():
         cursor = conn.cursor()
 
         # Execute a query
-        cursor.execute("SELECT * FROM contacts")
+        cursor.execute("SELECT 1")
         results = cursor.fetchall()
 
         # Display results
