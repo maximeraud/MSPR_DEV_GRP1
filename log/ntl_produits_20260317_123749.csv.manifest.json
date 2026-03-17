@@ -1,0 +1,13 @@
+{
+  "trace_id": "9b92b84d-17e9-4c8a-941b-d9a2a2debeb0",
+  "kind": "export_csv",
+  "artifact": "ntl_produits_20260317_123749.csv",
+  "size_bytes": 180,
+  "created_at": "2026-03-17T12:37:50Z",
+  "extra": {
+    "host": "172.16.135.62",
+    "db": "ntl",
+    "table": "produits",
+    "note": "mysql client"
+  }
+}

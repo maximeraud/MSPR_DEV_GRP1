@@ -27,8 +27,8 @@ def _write_dummy_file(path: Path, content: str) -> None:
     path.write_text(content, encoding="utf-8")
 
 
-def _write_manifest(artifact: Path, kind: str, extra: dict) -> Path:
-    manifest = artifact.with_suffix(artifact.suffix + ".manifest.json")
+def _write_manifest(artifact: Path, kind: str, extra: dict, log_dir: Path) -> Path:
+    manifest = log_dir / (artifact.name + ".manifest.json")
     payload = {
         "trace_id": str(uuid.uuid4()),
         "kind": kind,
@@ -153,7 +153,7 @@ def dump_sql():
         console.print("[yellow]Echec du dump réel — écriture d'un fichier de remplacement (placeholder).[/yellow]")
         _write_dummy_file(out, "-- Fallback: mysqldump failed or not available\n")
 
-    manifest = _write_manifest(out, "dump_sql", {"host": host, "db": db, "note": "remote dump"})
+    manifest = _write_manifest(out, "dump_sql", {"host": host, "db": db, "note": "remote dump"}, paths.log_dir)
     console.print(f"[green]OK[/green] Dump créé: {out}")
     console.print(f"Manifest: {manifest}")
 
@@ -309,7 +309,7 @@ def export_csv(
         console.print("[red]Export CSV échoué.[/red]")
         return
 
-    manifest = _write_manifest(out, "export_csv", {"host": host, "db": db, "table": table, "note": "mysql client"})
+    manifest = _write_manifest(out, "export_csv", {"host": host, "db": db, "table": table, "note": "mysql client"}, paths.log_dir)
     console.print(f"[green]OK[/green] CSV créé: {out}")
     console.print(f"Manifest: {manifest}")
 
