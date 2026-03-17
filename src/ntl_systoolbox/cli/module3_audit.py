@@ -1,20 +1,19 @@
 import json
+from marshal import version
 import os
-from ntl_systoolbox.core.paths import detect_repo_root
-import paramiko
 from pathlib import Path
+from datetime import datetime
+from concurrent.futures import ThreadPoolExecutor, as_completed
+import paramiko
 import typer
-from rich.console import Console
 import ipaddress
 import socket
-import json
-from concurrent.futures import ThreadPoolExecutor, as_completed
 import requests
-from datetime import datetime
 
 
 
 EOL_API = "https://endoflife.date/api"
+EOL_CACHE = {}
 app = typer.Typer()
 
 # --------------------------
@@ -67,10 +66,17 @@ def run_command_ssh(host: str, username: str, key_path: str, commands: list[str]
 # get_system_audit_ssh
 # --------------------------
 @app.command("audit-system-ssh")
-def get_system_audit_ssh(host: str, username: str, ssh_key: str | None = None, host_ip: str | None = None) -> dict:
+def get_system_audit_ssh(
+    host: str,
+    username: str,
+    ssh_key: str | None = None,
+    host_ip: str | None = None,
+    save_json: bool = True
+) -> dict:
     """
     Récupère les informations système d'un host distant via SSH.
     Peut prendre un paramètre optionnel host_ip pour préciser l'adresse IP.
+    Si save_json est True, génère un fichier JSON horodaté dans logs/
     """
     # Détecte la clé si elle n'est pas fournie
     if ssh_key is None:
@@ -114,8 +120,17 @@ def get_system_audit_ssh(host: str, username: str, ssh_key: str | None = None, h
 
     if host_ip:
         system_info["host_ip"] = host_ip
+
     # Enrichit le résultat avec EOL
-    return enrich_with_eol(system_info)
+    system_info = enrich_with_eol(system_info)
+
+    # Génération JSON horodaté dans logs/
+    if save_json:
+        timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        filename = f"audit_system_{timestamp}.json"
+        generate_report([system_info], filename=filename)
+
+    return system_info
 
 
 @app.command("audit-network-ssh-mt")
@@ -127,7 +142,7 @@ def audit_network_ssh_mt(
     max_workers: int = 25,  # nombre de threads
     network: str | None = None
 ) -> None:
-    """"
+    """
     - hosts : liste d'IP
     - subnet : plage réseau, ex: 192.168.1.0/24
     - Si aucun host ni subnet fourni, scan du /24 autour de l'IP locale
@@ -140,7 +155,6 @@ def audit_network_ssh_mt(
     if not username:
         username = typer.prompt("Nom d'utilisateur SSH non fourni. Merci de saisir le login :")
 
-
     # Détection automatique de la clé SSH
     if ssh_key is None:
         ssh_key = find_ssh_key()
@@ -149,7 +163,6 @@ def audit_network_ssh_mt(
             raise typer.Exit()
 
     # Génération de la liste d'hôtes
-   
     if not hosts:
         if network:
             net = ipaddress.ip_network(network, strict=False)
@@ -167,7 +180,7 @@ def audit_network_ssh_mt(
     def audit_host(host: str) -> dict:
         try:
             typer.echo(f"Tentative de connexion à {host}...")
-            info = get_system_audit_ssh(host, username, ssh_key)
+            info = get_system_audit_ssh(host, username, ssh_key, host_ip=host, save_json=False)  # désactive création fichier pour chaque host
             info["host_ip"] = host
             typer.echo(json.dumps(info, indent=2, ensure_ascii=False))
             if "error" in info:
@@ -186,18 +199,28 @@ def audit_network_ssh_mt(
         for future in as_completed(future_to_host):
             results.append(future.result())
         
-        typer.echo("Audit terminé")
+    typer.echo("Audit terminé")
+    
+    # Filtrer les machines où la connexion a fonctionné
+    successful_results = [r for r in results if 'error' not in r]
+    if successful_results:
+        typer.echo("\nRésultats des machines connectées :")
+        typer.echo(json.dumps(successful_results, indent=2, ensure_ascii=False))
         
-            # Filtrer les machines où la connexion a fonctionné
+        # Après avoir collecté tous les résultats
         successful_results = [r for r in results if 'error' not in r]
-        if successful_results:
-            typer.echo("\nRésultats des machines connectées :")
-            typer.echo(json.dumps(successful_results, indent=2, ensure_ascii=False))
-            generate_report(successful_results)
-        else:
-            typer.echo("Aucune machine connectée avec succès.")
+        
+        # Re-enrichissement EOL centralisé
+        for r in successful_results:
+            r = enrich_with_eol(r)  # on applique de nouveau la logique sur chaque host
+        
+        # Génération JSON finale
+        timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        filename = f"audit_network_{timestamp}.json"
+        generate_report(successful_results, filename=filename)
+    else:
+        typer.echo("Aucune machine connectée avec succès.")
 
-#### EN TEST - FONCTIONS DE TRAITEMENT DES CYCLES EOL (END OF LIFE) ####
 
 @app.command("fetch-eol")
 def fetch_eol_data(product):
@@ -205,14 +228,19 @@ def fetch_eol_data(product):
     Récupère les cycles EOL pour un produit donné via l'API endoflife.date.
     Retourne une liste de cycles.
     """
+    if product in EOL_CACHE:
+        return EOL_CACHE[product]
 
     url = f"{EOL_API}/{product}.json"
 
     try:
-        response = requests.get(url, timeout=10)
+        response = requests.get(url, timeout=5)
         response.raise_for_status()
-        return response.json()
-    except Exception:
+        data = response.json()
+        EOL_CACHE[product] = data
+        return data
+    except Exception as e:
+        print(f"[EOL ERROR] {product}: {e}")
         return []
 
 def find_eol(product, version):
@@ -221,17 +249,33 @@ def find_eol(product, version):
     Retourne un dictionnaire avec cycle, eol et release.
     """
     data = fetch_eol_data(product)
-    print(f"[DEBUG EOL] product={product}, version={version}, data={data}")
+
+    if not version:
+        version = "latest"
 
     for item in data:
         cycle = item.get("cycle")
 
-        if cycle and version.startswith(cycle):
-            return {
-                "cycle": cycle,
-                "eol": item.get("eol"),
-                "release": item.get("releaseDate")
-            }
+        if not cycle:
+            continue
+
+        # matching robuste
+        if version == cycle:
+            return item
+
+        if version.startswith(cycle):
+            return item
+
+        # cas : 22.04.3 → 22.04
+        if version == cycle:
+            return item
+
+        if version.startswith(cycle):
+            return item
+
+        # fallback sécurisé
+        if version.split(".")[0] == cycle.split(".")[0]:
+            return item
 
     return None
 
@@ -263,35 +307,46 @@ def enrich_with_eol(system_info):
     Enrichit le dictionnaire system_info avec les informations EOL et support_status.
     Retourne le dictionnaire enrichi.
     """
-    os_family = system_info.get("os_family")
-    distribution = system_info.get("distribution")
-    version = system_info.get("version")
-
-    product = distribution if distribution else os_family
-
+    host_ip = system_info.get("host_ip", "unknown")  # fallback si absent
+    product, version = normalize_os(system_info)
+    print(f"[DEBUG] {host_ip} -> product={product}, version={version}")
+    ...
     eol_info = find_eol(product, version)
 
     if not eol_info:
-        system_info["eol"] = None   
+        system_info["eol"] = None
         system_info["support_status"] = "unknown"
+        system_info["eol_product"] = product
         return system_info
 
-    system_info["eol"] = eol_info["eol"]
-    system_info["support_status"] = calculate_support_status(eol_info["eol"])
+    system_info["eol"] = eol_info.get("eol")
+    system_info["release_date"] = eol_info.get("releaseDate")
+    system_info["support_status"] = calculate_support_status(eol_info.get("eol"))
+    system_info["eol_product"] = product
 
     return system_info
 
 
-
 def get_logs_dir():
     """
-    Retourne le chemin absolu du dossier logs à la racine du projet.
+    Retourne le chemin du dossier logs dans MSPR_DEV_GRP1/logs
+    (indépendant du dossier depuis lequel le script est lancé)
     """
-    root = detect_repo_root()
-    logs_dir = os.path.join(root, "logs")
-    os.makedirs(logs_dir, exist_ok=True)
-    return logs_dir
 
+    # Chemin du fichier actuel
+    current_file = Path(__file__).resolve()
+
+    # Remonte jusqu'à trouver MSPR_DEV_GRP1
+    for parent in current_file.parents:
+        if parent.name == "MSPR_DEV_GRP1":
+            logs_dir = parent / "logs"
+            logs_dir.mkdir(exist_ok=True)
+            return str(logs_dir)
+
+    # fallback (si jamais)
+    logs_dir = current_file.parent / "logs"
+    logs_dir.mkdir(exist_ok=True)
+    return str(logs_dir)
 
 def generate_report(results, filename="audit_report.json"):
     """
@@ -300,7 +355,7 @@ def generate_report(results, filename="audit_report.json"):
     """
 
     logs_dir = get_logs_dir()
-    filename = os.path.join(logs_dir, "audit_report.json")
+    filename = os.path.join(logs_dir, filename)
     report = {
         "scan_date": datetime.today().isoformat(),
         "hosts": results
@@ -363,6 +418,40 @@ def show_audit_report() -> None:
         print(f"Support : {host.get('support_status', 'N/A')}")
         print(f"Kernel : {host.get('kernel_version', 'N/A')}")
     print("==============================\n")
+
+def normalize_os(system_info):
+    distro = (system_info.get("distribution") or "").lower()
+    version = (system_info.get("version") or "").strip()
+
+    # nettoyage version
+    version = (system_info.get("version") or "").strip()
+
+    if version:
+        parts = version.split()
+        version = parts[0] if parts else ""  # enlève "LTS", etc
+
+    # mapping OS → API
+    mapping = {
+        "ubuntu": "ubuntu",
+        "debian": "debian",
+        "centos": "centos",
+        "rocky": "rocky-linux",
+        "almalinux": "almalinux",
+        "rhel": "rhel",
+        "fedora": "fedora",
+        "arch": "arch-linux",
+        "windows": "windows"
+    }
+
+    product = mapping.get(distro, distro)
+    if "windows" in distro or system_info.get("os_family") == "windows":
+        if "10." in version:
+            return "windows-10", "10"
+        elif "11." in version:
+            return "windows-11", "11"
+        return "windows", version
+
+    return product, version
 
 # --- Fonctions appelées par le menu interactif ---
 
