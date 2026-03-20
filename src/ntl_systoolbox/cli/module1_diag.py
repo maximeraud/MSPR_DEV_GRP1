@@ -7,6 +7,10 @@ import getpass          #Mot de passe sécurisé
 import re               #Gestions des données (Disque/RAM/CPU/Uptime)s
 import sys              #Ferme le programme
 
+from ntl_systoolbox.cli.logger import get_logger
+
+logger = get_logger(__name__)
+
 app = typer.Typer()
 
 @app.command("run")
@@ -34,9 +38,14 @@ def run():
     cursor = None
 
     try:
+        logger.info("Connecté à la base de données")
+        logger.error("test ERROR")
+        logger.debug("test DEBUG")
         # Establish connection
         conn = mariadb.connect(**db_config)
         print("Connected successfully!")
+
+
 
         # Create a cursor
         cursor = conn.cursor()
