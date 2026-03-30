@@ -63,8 +63,8 @@ def check_database():
             logger.error("Impossible de se connecter au serveur MariaDB (host/port incorrect)")
         elif err.errno == 2005:
             logger.error("Nom d'hôte invalide")
-    else:
-        logger.error(f"Erreur MariaDB ({err.errno}) : {err}")
+        else:
+            logger.error(f"Erreur MariaDB ({err.errno}) : {err}")
 
     finally:
         # Close connection and cursor safely
