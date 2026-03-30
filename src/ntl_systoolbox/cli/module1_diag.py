@@ -17,7 +17,7 @@ app = typer.Typer()
 
 # ======== FONCTION : BDD ========
 
-def run():
+def check_database():
     # Connection parameters
 
     host = input("IP/Hostname : ").strip()
@@ -38,14 +38,10 @@ def run():
     cursor = None
 
     try:
-        logger.info("Connecté à la base de données")
-        logger.error("test ERROR")
-        logger.debug("test DEBUG")
+        logger.info("Tentative de connexion à la base de données")
         # Establish connection
         conn = mariadb.connect(**db_config)
-        print("Connected successfully!")
-
-
+        logger.info("Connexion à la base "+ db_config['database'] +" réussi")
 
         # Create a cursor
         cursor = conn.cursor()
@@ -57,15 +53,25 @@ def run():
         # Display results
         for row in results:
             print(row)
-
+    
     except mariadb.Error as err:
-        print(f"Error: {err}")
+        if err.errno == 1045:
+            logger.error("Identifiants invalides (utilisateur/mot de passe incorrect)")
+        elif err.errno == 1049:
+            logger.error("Base de données inexistante")
+        elif err.errno == 2003:
+            logger.error("Impossible de se connecter au serveur MariaDB (host/port incorrect)")
+        elif err.errno == 2005:
+            logger.error("Nom d'hôte invalide")
+    else:
+        logger.error(f"Erreur MariaDB ({err.errno}) : {err}")
 
     finally:
         # Close connection and cursor safely
         if cursor is not None:
             cursor.close()
         if conn is not None:
+            logger.info("Fermeture de la connexion")
             conn.close()
 
 

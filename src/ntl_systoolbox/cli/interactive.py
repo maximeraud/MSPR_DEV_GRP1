@@ -28,7 +28,7 @@ def run_interactive_menu() -> None:
 
 def _menu_module1() -> None:
     from ntl_systoolbox.cli.module1_diag import (
-        run,
+        check_database,
         run_AD_DNS_OS
     )   
 
@@ -50,7 +50,7 @@ def _menu_module1() -> None:
             run_AD_DNS_OS()
         elif c == "2":
             console.print("[yellow]TODO:[/yellow] implémenter test MySQL")
-            run()
+            check_database()
         elif c == "3":
             console.print("[yellow]TODO:[/yellow] exporter JSON diagnostic")
         elif c == "9":
