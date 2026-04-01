@@ -1,3 +1,4 @@
+
 import json
 from marshal import version
 import os
@@ -9,6 +10,9 @@ import typer
 import ipaddress
 import socket
 import requests
+from ntl_systoolbox.cli.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 
@@ -49,14 +53,25 @@ def run_command_ssh(host: str, username: str, key_path: str, commands: list[str]
     ssh = paramiko.SSHClient()
     ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
     try:
+        logger.info(f"Tentative de connexion SSH à {host} avec l'utilisateur {username}")
         ssh.connect(hostname=host, username=username, key_filename=key_path, timeout=10)
+        logger.info(f"Connexion SSH réussie à {host}")
         for cmd in commands:
-            stdin, stdout, stderr = ssh.exec_command(cmd)
-            out = stdout.read().decode().strip()
-            err = stderr.read().decode().strip()
-            result["outputs"][cmd] = {"stdout": out, "stderr": err}
+            try:
+                stdin, stdout, stderr = ssh.exec_command(cmd)
+                out = stdout.read().decode().strip()
+                err = stderr.read().decode().strip()
+                result["outputs"][cmd] = {"stdout": out, "stderr": err}
+                if err:
+                    logger.error(f"Erreur lors de l'exécution de '{cmd}' sur {host}: {err}")
+                else:
+                    logger.info(f"Commande '{cmd}' exécutée avec succès sur {host}")
+            except Exception as cmd_exc:
+                logger.error(f"Exception lors de l'exécution de '{cmd}' sur {host}: {cmd_exc}")
+                result["outputs"][cmd] = {"stdout": "", "stderr": str(cmd_exc)}
         result["success"] = True
     except Exception as e:
+        logger.error(f"Erreur SSH sur {host}: {e}")
         result["error"] = str(e)
     finally:
         ssh.close()
@@ -82,6 +97,7 @@ def get_system_audit_ssh(
     if ssh_key is None:
         ssh_key = find_ssh_key()
         if ssh_key is None:
+            logger.error(f"Aucune clé SSH trouvée pour {host}")
             return {"error": "Aucune clé SSH trouvée"}
 
     commands_linux = ["cat /etc/os-release", "uname -a", "hostname"]
@@ -106,6 +122,7 @@ def get_system_audit_ssh(
             "version": os_data.get("VERSION_ID"),
             "kernel_version": ssh_result["outputs"].get("uname -a", {}).get("stdout", "")
         }
+        logger.info(f"Audit système Linux réussi pour {host}")
     else:
         # Tentative Windows
         ssh_result_win = run_command_ssh(host, username, ssh_key, commands_windows)
@@ -115,7 +132,9 @@ def get_system_audit_ssh(
                 "os_family": "windows",
                 "version": ssh_result_win["outputs"].get("ver", {}).get("stdout", "")
             }
+            logger.info(f"Audit système Windows réussi pour {host}")
         else:
+            logger.error(f"Echec de l'audit système pour {host}: {ssh_result.get('error')}")
             system_info = {"error": ssh_result.get("error")}
 
     if host_ip:
@@ -159,6 +178,7 @@ def audit_network_ssh_mt(
     if ssh_key is None:
         ssh_key = find_ssh_key()
         if ssh_key is None:
+            logger.error("Aucune clé SSH trouvée pour l'audit réseau")
             typer.echo(json.dumps([{"error": "Aucune clé SSH trouvée"}], indent=2))
             raise typer.Exit()
 
@@ -180,16 +200,20 @@ def audit_network_ssh_mt(
     def audit_host(host: str) -> dict:
         try:
             typer.echo(f"Tentative de connexion à {host}...")
+            logger.info(f"Début de l'audit pour {host}")
             info = get_system_audit_ssh(host, username, ssh_key, host_ip=host, save_json=False)  # désactive création fichier pour chaque host
             info["host_ip"] = host
             typer.echo(json.dumps(info, indent=2, ensure_ascii=False))
             if "error" in info:
                 typer.echo(f"[ERROR] {host} -> {info['error']}")
+                logger.error(f"Erreur d'audit pour {host}: {info['error']}")
             else:
                 typer.echo(f"[OK] {host} -> Connexion réussie")
+                logger.info(f"Audit réussi pour {host}")
             return info
         except Exception as e:
             typer.echo(f"[TIMEOUT/ERROR] {host} -> {str(e)}")
+            logger.error(f"Exception lors de l'audit de {host}: {e}")
             return {"host_ip": host, "error": str(e)}
 
     # Multithreading
@@ -329,7 +353,7 @@ def enrich_with_eol(system_info):
 
 def get_logs_dir():
     """
-    Retourne le chemin du dossier logs dans MSPR_DEV_GRP1/logs
+    Retourne le chemin du dossier log dans MSPR_DEV_GRP1/log
     (indépendant du dossier depuis lequel le script est lancé)
     """
 
@@ -339,14 +363,14 @@ def get_logs_dir():
     # Remonte jusqu'à trouver MSPR_DEV_GRP1
     for parent in current_file.parents:
         if parent.name == "MSPR_DEV_GRP1":
-            logs_dir = parent / "logs"
-            logs_dir.mkdir(exist_ok=True)
-            return str(logs_dir)
+            log_dir = parent / "log"
+            log_dir.mkdir(exist_ok=True)
+            return str(log_dir)
 
     # fallback (si jamais)
-    logs_dir = current_file.parent / "logs"
-    logs_dir.mkdir(exist_ok=True)
-    return str(logs_dir)
+    log_dir = current_file.parent / "log"
+    log_dir.mkdir(exist_ok=True)
+    return str(log_dir)
 
 def generate_report(results, filename="audit_report.json"):
     """
@@ -354,8 +378,8 @@ def generate_report(results, filename="audit_report.json"):
     Le fichier est sauvegardé sous filename.
     """
 
-    logs_dir = get_logs_dir()
-    filename = os.path.join(logs_dir, filename)
+    log_dir = get_logs_dir()
+    filename = os.path.join(log_dir, filename)
     report = {
         "scan_date": datetime.today().isoformat(),
         "hosts": results
@@ -370,9 +394,9 @@ def export_audit_report_csv() -> None:
     Exporte le rapport audit_report.json en CSV dans le dossier logs.
     """
     import csv
-    logs_dir = get_logs_dir()
-    json_file = os.path.join(logs_dir, "audit_report.json")
-    csv_file = os.path.join(logs_dir, "audit_report.csv")
+    log_dir = get_logs_dir()
+    json_file = os.path.join(log_dir, "audit_report.json")
+    csv_file = os.path.join(log_dir, "audit_report.csv")
     if not os.path.exists(json_file):
         print("Aucun rapport audit_report.json trouvé.")
         return
@@ -399,8 +423,8 @@ def show_audit_report() -> None:
     """
     Affiche le rapport audit_report.json de façon visuelle (console).
     """
-    logs_dir = get_logs_dir()
-    filename = os.path.join(logs_dir, "audit_report.json")
+    log_dir = get_logs_dir()
+    filename = os.path.join(log_dir, "audit_report.json")
     if not os.path.exists(filename):
         print("Aucun rapport audit_report.json trouvé.")
         return
