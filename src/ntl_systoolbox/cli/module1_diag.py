@@ -56,13 +56,13 @@ def check_database():
     
     except mariadb.Error as err:
         if err.errno == 1045:
-            logger.error("Identifiants invalides (utilisateur/mot de passe incorrect)")
+            logger.error("ERROR 1045 : Identifiants invalides (utilisateur/mot de passe incorrect)")
         elif err.errno == 1049:
-            logger.error("Base de données inexistante")
+            logger.error("ERROR 1049 : Base de données inexistante")
         elif err.errno == 2003:
-            logger.error("Impossible de se connecter au serveur MariaDB (host/port incorrect)")
+            logger.error("ERROR 2003 : Impossible de se connecter au serveur MariaDB (host/port incorrect)")
         elif err.errno == 2005:
-            logger.error("Nom d'hôte invalide")
+            logger.error("ERROR 2005 : Nom d'hôte invalide")
         else:
             logger.error(f"Erreur MariaDB ({err.errno}) : {err}")
 
