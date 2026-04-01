@@ -1,4 +1,3 @@
-import json
 import types
 from pathlib import Path
 
@@ -44,26 +43,29 @@ def test_write_dummy_file_creates_parent_and_writes(tmp_path: Path):
     assert target.read_text(encoding="utf-8") == "hello"
 
 
-def test_write_manifest_creates_json(tmp_path: Path):
+def test_log_artifact_calls_logger(tmp_path: Path, monkeypatch):
     """
-    Vérifie que _write_manifest() crée bien un fichier JSON
-    contenant les métadonnées attendues sur l'artefact.
+    Vérifie que _log_artifact() appelle bien le logger
+    avec les métadonnées attendues sur l'artefact.
     """
     artifact = tmp_path / "dump.sql"
     artifact.write_text("abc", encoding="utf-8")
 
-    log_dir = tmp_path / "log"
-    log_dir.mkdir()
-    manifest = m2._write_manifest(artifact, "dump_sql", {"k": "v"}, log_dir)
-    assert manifest.exists()
+    logged = {}
 
-    data = json.loads(manifest.read_text(encoding="utf-8"))
+    def fake_info(msg, **kwargs):
+        logged["msg"] = msg
+        logged["extra_data"] = kwargs.get("extra", {}).get("extra_data", {})
 
-    # Vérifie le contenu principal du manifest
-    assert data["kind"] == "dump_sql"
-    assert data["artifact"] == "dump.sql"
-    assert data["size_bytes"] == artifact.stat().st_size
-    assert data["extra"]["k"] == "v"
+    monkeypatch.setattr(m2.logger, "info", fake_info)
+
+    m2._log_artifact(artifact, "dump_sql", {"k": "v"})
+
+    assert logged["extra_data"]["kind"] == "dump_sql"
+    assert logged["extra_data"]["artifact"] == "dump.sql"
+    assert logged["extra_data"]["size_bytes"] == artifact.stat().st_size
+    assert logged["extra_data"]["k"] == "v"
+    assert "trace_id" in logged["extra_data"]
 
 
 def test_perform_mysqldump_returns_false_when_mysqldump_missing(monkeypatch, tmp_path: Path):
