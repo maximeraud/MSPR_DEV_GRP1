@@ -53,9 +53,8 @@ def run_command_ssh(host: str, username: str, key_path: str, commands: list[str]
     ssh = paramiko.SSHClient()
     ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
     try:
-        logger.info(f"Tentative de connexion SSH à {host} avec l'utilisateur {username}")
+        logger.info(f"Connexion SSH à {host} ({username})")
         ssh.connect(hostname=host, username=username, key_filename=key_path, timeout=10)
-        logger.info(f"Connexion SSH réussie à {host}")
         for cmd in commands:
             try:
                 stdin, stdout, stderr = ssh.exec_command(cmd)
@@ -63,15 +62,18 @@ def run_command_ssh(host: str, username: str, key_path: str, commands: list[str]
                 err = stderr.read().decode().strip()
                 result["outputs"][cmd] = {"stdout": out, "stderr": err}
                 if err:
-                    logger.error(f"Erreur lors de l'exécution de '{cmd}' sur {host}: {err}")
-                else:
-                    logger.info(f"Commande '{cmd}' exécutée avec succès sur {host}")
+                    logger.warning(f"{host}: Erreur '{cmd}': {err}")
             except Exception as cmd_exc:
-                logger.error(f"Exception lors de l'exécution de '{cmd}' sur {host}: {cmd_exc}")
+                logger.error(f"{host}: Exception '{cmd}': {cmd_exc}")
                 result["outputs"][cmd] = {"stdout": "", "stderr": str(cmd_exc)}
         result["success"] = True
     except Exception as e:
-        logger.error(f"Erreur SSH sur {host}: {e}")
+        # Ne logue que les erreurs inattendues, pas les timeouts/refus classiques
+        msg = str(e).lower()
+        if any(x in msg for x in ["timed out", "timeout", "refused", "no route", "unreachable", "could not connect", "connection reset", "host is down"]):
+            pass  # Pas de log pour les erreurs attendues de réseau
+        else:
+            logger.error(f"SSH {host}: {e}")
         result["error"] = str(e)
     finally:
         ssh.close()
@@ -200,20 +202,22 @@ def audit_network_ssh_mt(
     def audit_host(host: str) -> dict:
         try:
             typer.echo(f"Tentative de connexion à {host}...")
-            logger.info(f"Début de l'audit pour {host}")
             info = get_system_audit_ssh(host, username, ssh_key, host_ip=host, save_json=False)  # désactive création fichier pour chaque host
             info["host_ip"] = host
             typer.echo(json.dumps(info, indent=2, ensure_ascii=False))
             if "error" in info:
                 typer.echo(f"[ERROR] {host} -> {info['error']}")
-                logger.error(f"Erreur d'audit pour {host}: {info['error']}")
+                # Ne logue que les erreurs inattendues (pas de spam pour les timeouts)
+                msg = str(info["error"]).lower()
+                if not any(x in msg for x in ["timed out", "timeout", "refused", "no route", "unreachable", "could not connect", "connection reset", "host is down"]):
+                    logger.error(f"Erreur d'audit pour {host}: {info['error']}")
             else:
                 typer.echo(f"[OK] {host} -> Connexion réussie")
-                logger.info(f"Audit réussi pour {host}")
-            return info
         except Exception as e:
             typer.echo(f"[TIMEOUT/ERROR] {host} -> {str(e)}")
-            logger.error(f"Exception lors de l'audit de {host}: {e}")
+            msg = str(e).lower()
+            if not any(x in msg for x in ["timed out", "timeout", "refused", "no route", "unreachable", "could not connect", "connection reset", "host is down"]):
+                logger.error(f"Exception lors de l'audit de {host}: {e}")
             return {"host_ip": host, "error": str(e)}
 
     # Multithreading
@@ -353,7 +357,7 @@ def enrich_with_eol(system_info):
 
 def get_logs_dir():
     """
-    Retourne le chemin du dossier log dans MSPR_DEV_GRP1/log
+    Retourne le chemin du dossier logs dans MSPR_DEV_GRP1/logs
     (indépendant du dossier depuis lequel le script est lancé)
     """
 
@@ -397,9 +401,19 @@ def export_audit_report_csv() -> None:
     logs_dir = get_logs_dir()
     json_file = os.path.join(logs_dir, "audit_report.json")
     csv_file = os.path.join(logs_dir, "audit_report.csv")
+    # Si audit_report.json n'existe pas, chercher le dernier audit_network_*.json ou audit_system_*.json
     if not os.path.exists(json_file):
-        print("Aucun rapport audit_report.json trouvé.")
-        return
+        import glob
+        pattern_network = os.path.join(logs_dir, "audit_network_*.json")
+        pattern_system = os.path.join(logs_dir, "audit_system_*.json")
+        files = glob.glob(pattern_network) + glob.glob(pattern_system)
+        if not files:
+            print("Aucun rapport d'audit trouvé.")
+            return
+        # Prendre le plus récent
+        files.sort(key=os.path.getmtime, reverse=True)
+        json_file = files[0]
+        print(f" utilisation du dernier rapport : {os.path.basename(json_file)}")
     with open(json_file, "r") as f:
         report = json.load(f)
     hosts = report.get('hosts', [])
@@ -425,9 +439,19 @@ def show_audit_report() -> None:
     """
     logs_dir = get_logs_dir()
     filename = os.path.join(logs_dir, "audit_report.json")
+    # Si audit_report.json n'existe pas, chercher le dernier audit_network_*.json ou audit_system_*.json
     if not os.path.exists(filename):
-        print("Aucun rapport audit_report.json trouvé.")
-        return
+        import glob
+        pattern_network = os.path.join(logs_dir, "audit_network_*.json")
+        pattern_system = os.path.join(logs_dir, "audit_system_*.json")
+        files = glob.glob(pattern_network) + glob.glob(pattern_system)
+        if not files:
+            print("Aucun rapport d'audit trouvé.")
+            return
+        # Prendre le plus récent
+        files.sort(key=os.path.getmtime, reverse=True)
+        filename = files[0]
+        print(f"utilisation du dernier rapport : {os.path.basename(filename)}")
     with open(filename, "r") as f:
         report = json.load(f)
     print("\n===== Rapport Audit Visuel =====")
