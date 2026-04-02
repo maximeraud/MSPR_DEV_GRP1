@@ -413,7 +413,7 @@ def export_audit_report_csv() -> None:
         # Prendre le plus récent
         files.sort(key=os.path.getmtime, reverse=True)
         json_file = files[0]
-        print(f"Aucun audit_report.json, utilisation du dernier rapport : {os.path.basename(json_file)}")
+        print(f" utilisation du dernier rapport : {os.path.basename(json_file)}")
     with open(json_file, "r") as f:
         report = json.load(f)
     hosts = report.get('hosts', [])
@@ -451,7 +451,7 @@ def show_audit_report() -> None:
         # Prendre le plus récent
         files.sort(key=os.path.getmtime, reverse=True)
         filename = files[0]
-        print(f"Aucun audit_report.json, utilisation du dernier rapport : {os.path.basename(filename)}")
+        print(f"utilisation du dernier rapport : {os.path.basename(filename)}")
     with open(filename, "r") as f:
         report = json.load(f)
     print("\n===== Rapport Audit Visuel =====")
