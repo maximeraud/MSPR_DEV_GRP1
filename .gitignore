@@ -1,6 +1,6 @@
 # Export CSV et Logs 
 export/
-log/
+logs/
 
 # Dump SQL
 sauvegarde/
