@@ -363,14 +363,14 @@ def get_logs_dir():
     # Remonte jusqu'à trouver MSPR_DEV_GRP1
     for parent in current_file.parents:
         if parent.name == "MSPR_DEV_GRP1":
-            log_dir = parent / "log"
-            log_dir.mkdir(exist_ok=True)
-            return str(log_dir)
+            logs_dir = parent / "logs"
+            logs_dir.mkdir(exist_ok=True)
+            return str(logs_dir)
 
     # fallback (si jamais)
-    log_dir = current_file.parent / "log"
-    log_dir.mkdir(exist_ok=True)
-    return str(log_dir)
+    logs_dir = current_file.parent / "logs"
+    logs_dir.mkdir(exist_ok=True)
+    return str(logs_dir)
 
 def generate_report(results, filename="audit_report.json"):
     """
@@ -378,8 +378,8 @@ def generate_report(results, filename="audit_report.json"):
     Le fichier est sauvegardé sous filename.
     """
 
-    log_dir = get_logs_dir()
-    filename = os.path.join(log_dir, filename)
+    logs_dir = get_logs_dir()
+    filename = os.path.join(logs_dir, filename)
     report = {
         "scan_date": datetime.today().isoformat(),
         "hosts": results
@@ -394,9 +394,9 @@ def export_audit_report_csv() -> None:
     Exporte le rapport audit_report.json en CSV dans le dossier logs.
     """
     import csv
-    log_dir = get_logs_dir()
-    json_file = os.path.join(log_dir, "audit_report.json")
-    csv_file = os.path.join(log_dir, "audit_report.csv")
+    logs_dir = get_logs_dir()
+    json_file = os.path.join(logs_dir, "audit_report.json")
+    csv_file = os.path.join(logs_dir, "audit_report.csv")
     if not os.path.exists(json_file):
         print("Aucun rapport audit_report.json trouvé.")
         return
@@ -423,8 +423,8 @@ def show_audit_report() -> None:
     """
     Affiche le rapport audit_report.json de façon visuelle (console).
     """
-    log_dir = get_logs_dir()
-    filename = os.path.join(log_dir, "audit_report.json")
+    logs_dir = get_logs_dir()
+    filename = os.path.join(logs_dir, "audit_report.json")
     if not os.path.exists(filename):
         print("Aucun rapport audit_report.json trouvé.")
         return
