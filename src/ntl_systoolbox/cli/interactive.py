@@ -36,10 +36,10 @@ def _menu_module1() -> None:
         c = choose(
             "Module 1 - Diagnostic",
             [
-                ("1", "Services AD/DNS et ressources OS (placeholder)"),
-                ("2", "Tester accès MySQL (placeholder)"),
-                ("3", "Infos ressources OS (placeholder)"),
-                ("4", "Sortie JSON (placeholder)"),
+                ("1", "Services AD/DNS et ressources OS"),
+                ("2", "Tester accès MySQL"),
+                ("3", "Infos ressources OS"),
+                ("4", "Sortie JSON"),
                 ("9", "Quitter l'application"),
             ],
         )
